@@ -3,56 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { buildQuestion, evaluateAnswer, pointsForCorrect } from "@/lib/game";
 import { Question } from "@/lib/types";
-
-type Leader = {
-  initials: string;
-  streak: number;
-  score: number;
-  completedAt: string;
-};
-
-const LEADERBOARD_KEY = "lucky-break-daily-top5";
+import { Leader, fetchTop5, submitScore as submitUniversalScore, universalLeaderboardConfigured } from "@/lib/leaderboard";
 
 function playerInitials(name:string){
   return name.split(" ").map(x=>x[0]).slice(0,2).join("");
-}
-
-function utcDay() {
-  return new Date().toISOString().slice(0,10);
-}
-
-function leaderboardStorageKey() {
-  return `${LEADERBOARD_KEY}:${utcDay()}`;
-}
-
-function sortLeaders(rows:Leader[]) {
-  return [...rows].sort((a,b)=>
-    b.streak-a.streak ||
-    b.score-a.score ||
-    new Date(a.completedAt).getTime()-new Date(b.completedAt).getTime()
-  );
-}
-
-function bestPerInitials(rows:Leader[]) {
-  const best = new Map<string,Leader>();
-  for (const row of sortLeaders(rows)) {
-    if (!best.has(row.initials)) best.set(row.initials,row);
-  }
-  return sortLeaders([...best.values()]).slice(0,5);
-}
-
-function loadLocalLeaders():Leader[] {
-  try {
-    const raw=localStorage.getItem(leaderboardStorageKey());
-    if (!raw) return [];
-    return bestPerInitials(JSON.parse(raw) as Leader[]);
-  } catch {
-    return [];
-  }
-}
-
-function saveLocalLeaders(rows:Leader[]) {
-  localStorage.setItem(leaderboardStorageKey(),JSON.stringify(bestPerInitials(rows)));
 }
 
 function qualifiesForTop5(streak:number,score:number,leaders:Leader[]) {
@@ -78,11 +32,35 @@ export default function Game() {
   const [submittedInitials,setSubmittedInitials]=useState<string|null>(null);
   const [chars,setChars]=useState(["","",""]);
   const [entryError,setEntryError]=useState("");
+  const [leaderboardLoading,setLeaderboardLoading]=useState(true);
+  const [leaderboardError,setLeaderboardError]=useState("");
   const inputRefs=useRef<Array<HTMLInputElement|null>>([]);
+
+  async function refreshLeaders() {
+    if (!universalLeaderboardConfigured()) {
+      setLeaders([]);
+      setLeaderboardLoading(false);
+      setLeaderboardError("Universal leaderboard is not connected yet.");
+      return [];
+    }
+    try {
+      setLeaderboardLoading(true);
+      setLeaderboardError("");
+      const rows=await fetchTop5();
+      setLeaders(rows);
+      return rows;
+    } catch {
+      setLeaderboardError("Could not load today's leaderboard.");
+      return leaders;
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  }
 
   useEffect(()=>{
     setBest(Number(localStorage.getItem("lucky-break-best")||0));
-    setLeaders(loadLocalLeaders());
+    void refreshLeaders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
   function nextQuestion(nextStreak=streak) {
@@ -104,10 +82,12 @@ export default function Game() {
     setSubmittedInitials(null);
     setChars(["","",""]);
     setEntryError("");
-    const q=buildQuestion(0,[]);
+    const q=buildQuestion(0,[],[]);
     setQuestion(q);
     setRecent([q.id]);
+    setRecentPlayers(q.players.map(p=>p.id));
     setSelected(null);
+    void refreshLeaders();
   }
 
   function choose(id:string) {
@@ -127,7 +107,10 @@ export default function Game() {
       window.setTimeout(()=>nextQuestion(next),700);
     } else {
       setEnded(true);
-      setQualifies(qualifiesForTop5(streak,score,leaders));
+      void (async()=>{
+        const latest=await refreshLeaders();
+        setQualifies(universalLeaderboardConfigured() && qualifiesForTop5(streak,score,latest));
+      })();
     }
   }
 
@@ -146,25 +129,22 @@ export default function Game() {
     }
   }
 
-  function submitScore() {
+  async function submitScore() {
     const tag=chars.join("");
     if (!/^[A-Z0-9]{3}$/.test(tag)) {
       setEntryError("Enter exactly 3 letters or numbers.");
       return;
     }
 
-    const entry:Leader={
-      initials:tag,
-      streak,
-      score,
-      completedAt:new Date().toISOString()
-    };
-
-    const updated=bestPerInitials([...leaders,entry]);
-    setLeaders(updated);
-    saveLocalLeaders(updated);
-    setSubmittedInitials(tag);
-    setQualifies(false);
+    try {
+      setEntryError("");
+      await submitUniversalScore(tag,streak);
+      setSubmittedInitials(tag);
+      setQualifies(false);
+      await refreshLeaders();
+    } catch {
+      setEntryError("Could not submit score. Try again.");
+    }
   }
 
   async function share() {
@@ -181,9 +161,13 @@ export default function Game() {
   function Leaderboard({highlight}:{highlight?:string|null}) {
     return <section className="panel arcadePanel">
       <h2>TODAY&apos;S TOP 5</h2>
-      {leaders.length===0
-        ? <div className="emptyBoard">No scores yet today. Be the first.</div>
-        : leaders.map((l,i)=>
+      {leaderboardLoading
+        ? <div className="emptyBoard">Loading today&apos;s scores…</div>
+        : leaderboardError
+          ? <div className="emptyBoard">{leaderboardError}</div>
+          : leaders.length===0
+            ? <div className="emptyBoard">No scores yet today. Be the first.</div>
+            : leaders.map((l,i)=>
           <div className={"leader "+(highlight===l.initials?"highlight":"")} key={l.initials}>
             <span>#{i+1}</span>
             <strong className="arcadeTag">{l.initials}</strong>

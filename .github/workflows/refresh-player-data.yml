@@ -27,3 +27,5 @@ jobs:
           git add lib/data.ts
           git diff --cached --quiet || git commit -m "Refresh 2025-26 and career player stats"
           git push
+
+# expanded-pool refresh

@@ -191,3 +191,94 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
     font-size:2.2rem;
   }
 }
+
+
+/* Starting Five */
+.dailyShell { max-width: 1060px; }
+.dailyHero { text-align:center; max-width:760px; margin:56px auto 30px; }
+.dailyTitle { margin:8px 0 6px; font-size:clamp(2rem,5vw,4rem); line-height:.98; letter-spacing:-.055em; font-weight:950; }
+.dailyTagline { color:var(--muted); margin:0 0 24px; font-size:1rem; }
+.challengePreview,.completedCard {
+  margin:26px auto 0; padding:22px; max-width:640px; border:1px solid var(--line); border-radius:18px;
+  background:linear-gradient(160deg,var(--panel-2),var(--panel));
+}
+.challengePreview strong { display:block; margin-top:7px; font-size:1.2rem; }
+.challengePreview p { color:var(--muted); line-height:1.5; margin:10px 0 0; }
+.dailyPlay { min-width:220px; }
+.oneAttempt { color:var(--muted); font-size:.82rem; margin-top:12px; }
+.endlessPromo {
+  margin:42px auto 0; padding:20px 22px; border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  display:flex; justify-content:space-between; align-items:center; gap:18px;
+}
+.endlessPromo h2 { margin:5px 0 4px; font-size:1.2rem; }
+.endlessPromo p { margin:0; color:var(--muted); font-size:.88rem; }
+.textButton {
+  border:0; background:transparent; color:var(--muted); padding:8px 0; cursor:pointer; font-weight:800;
+}
+.textButton:hover { color:var(--text); }
+
+.dailyQuestion { text-align:center; max-width:820px; margin:18px auto 16px; }
+.dailyQuestion h1 { margin:7px 0 0; font-size:clamp(1.4rem,3.4vw,2.4rem); line-height:1.08; letter-spacing:-.035em; }
+.selectionBadge {
+  min-width:56px; padding:8px 10px; text-align:center; border-radius:12px; border:1px solid var(--line);
+  background:var(--panel); font-weight:950;
+}
+.rosterSlots { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:14px 0 16px; }
+.rosterSlot {
+  min-height:46px; display:flex; align-items:center; gap:8px; padding:9px 10px; border:1px dashed #383840;
+  border-radius:12px; color:#777782; background:#0d0d10; font-size:.78rem; overflow:hidden;
+}
+.rosterSlot span { display:grid; place-items:center; flex:0 0 22px; height:22px; border-radius:50%; background:#1d1d23; font-weight:900; }
+.rosterSlot.filled { color:var(--text); border-style:solid; border-color:rgba(255,107,44,.55); background:rgba(255,107,44,.06); }
+
+.dailyBoard { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.dailyCard {
+  border:1px solid var(--line); border-radius:16px; padding:13px 15px; background:linear-gradient(160deg,var(--panel-2),var(--panel));
+  color:var(--text); text-align:left; min-height:92px; transition:.12s ease; position:relative;
+}
+button.dailyCard { cursor:pointer; }
+button.dailyCard:hover { border-color:#484852; transform:translateY(-1px); }
+.dailyCard.selected { border-color:var(--accent); background:rgba(255,107,44,.10); box-shadow:inset 0 0 0 1px rgba(255,107,44,.12); }
+.dailyCard.correct { border-color:var(--good); background:rgba(62,207,142,.10); }
+.dailyCard.wrong { border-color:var(--bad); background:rgba(255,92,102,.10); }
+.dailyCard.missed { border-color:#e8a93b; background:rgba(232,169,59,.10); }
+.dailyCardTop { display:flex; align-items:center; gap:12px; }
+.dailyCard .initials { margin:0; flex:0 0 42px; width:42px; height:42px; }
+.pickState { position:absolute; right:12px; top:12px; color:var(--muted); font-size:.65rem; letter-spacing:.12em; font-weight:900; }
+.dailyCard.selected .pickState { color:var(--accent); }
+.dailyCard .reveal { margin-left:54px; color:var(--text); }
+
+.stickyLock {
+  position:sticky; bottom:0; margin:16px -8px 0; padding:12px 8px; display:flex; align-items:center; justify-content:space-between;
+  gap:12px; background:linear-gradient(to top,var(--bg) 70%,rgba(9,9,11,.86)); z-index:5;
+}
+.stickyLock span { color:var(--muted); font-size:.8rem; letter-spacing:.08em; }
+.stickyLock strong { color:var(--text); font-size:1rem; }
+.primary:disabled { opacity:.4; cursor:not-allowed; }
+
+.resultHero { text-align:center; margin:30px auto 24px; }
+.dailyScore { font-size:clamp(3.4rem,11vw,6.5rem); font-weight:950; line-height:.95; letter-spacing:-.08em; margin:10px 0; }
+.shareGrid { font-size:clamp(1.7rem,5vw,2.5rem); letter-spacing:.08em; margin:8px 0; }
+.resultBoard { margin-top:24px; }
+.correctFive { margin:28px 0 8px; padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--panel); }
+.correctFive h2 { margin:0 0 10px; font-size:.82rem; letter-spacing:.14em; }
+.rankRow { display:grid; grid-template-columns:28px 1fr auto; gap:8px; padding:9px 0; border-bottom:1px solid #232329; font-size:.9rem; }
+.rankRow span:last-child { color:var(--muted); }
+.resultNote { color:var(--muted); font-size:.88rem; }
+.resultNote strong { color:var(--text); }
+
+@media (max-width:680px) {
+  .dailyHero { margin-top:34px; }
+  .rosterSlots { grid-template-columns:1fr; gap:5px; }
+  .rosterSlot { min-height:36px; padding:6px 9px; }
+  .dailyBoard { gap:7px; }
+  .dailyCard { padding:11px; min-height:88px; }
+  .dailyCard .initials { flex-basis:36px; width:36px; height:36px; }
+  .dailyCardTop { gap:9px; }
+  .dailyCard .name { font-size:.9rem; }
+  .dailyCard .meta { font-size:.68rem; }
+  .pickState { display:none; }
+  .dailyCard .reveal { margin-left:45px; font-size:.78rem; }
+  .endlessPromo { align-items:flex-start; flex-direction:column; }
+  .stickyLock { margin-left:-2px; margin-right:-2px; }
+}

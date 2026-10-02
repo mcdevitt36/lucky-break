@@ -25,7 +25,7 @@ def main():
     src = DATA_PATH.read_text()
     row_re = re.compile(
         r'\{id:"([^"]+)",name:"([^"]+)",team:"([^"]+)",position:"([^"]+)",'
-        r'ppg:([0-9.]+),apg:([0-9.]+),rpg:([0-9.]+),threesMade:([0-9.]+),'
+        r'(?:seasonGames:([0-9.]+),)?ppg:([0-9.]+),apg:([0-9.]+),rpg:([0-9.]+),threesMade:([0-9.]+),'
         r'fgPct:([0-9.]+),threePct:([0-9.]+),careerPoints:([0-9.]+),'
         r'careerAssists:([0-9.]+),careerRebounds:([0-9.]+),seasonsPlayed:([0-9.]+),'
         r'allStars:([0-9.]+),allNBA:([0-9.]+),championships:([0-9.]+),'
@@ -35,9 +35,9 @@ def main():
     for m in row_re.finditer(src):
         old.append({
             "id": m[1], "name": m[2], "team": m[3], "position": m[4],
-            "allStars": int(float(m[15])), "allNBA": int(float(m[16])),
-            "championships": int(float(m[17])), "mvps": int(float(m[18])),
-            "draftPick": int(float(m[19])), "draftYear": int(float(m[20])),
+            "allStars": int(float(m[16])), "allNBA": int(float(m[17])),
+            "championships": int(float(m[18])), "mvps": int(float(m[19])),
+            "draftPick": int(float(m[20])), "draftYear": int(float(m[21])),
         })
     if not old:
         raise RuntimeError("Could not parse existing player data")
@@ -91,8 +91,6 @@ def main():
             threes = 0
             fg = three = 0.0
 
-        # Preserve the existing display position and achievement counters.
-        # The numerical season/career fields below are regenerated from source data.
         out.append(
             f'  {{id:"{p["id"]}",name:"{p["name"]}",team:"{team}",position:"{p["position"]}",'
             f'seasonGames:{gp},ppg:{ppg:.1f},apg:{apg:.1f},rpg:{rpg:.1f},threesMade:{threes},'

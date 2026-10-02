@@ -30,6 +30,7 @@ export type Category = {
   format: (n:number)=>string;
   lowerWins?: boolean;
   eligibility?: (p:Player)=>boolean;
+  season?: string;
 };
 
 export type Question = {

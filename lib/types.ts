@@ -3,6 +3,7 @@ export type Player = {
   name: string;
   team: string;
   position: string;
+  seasonGames: number;
   ppg: number;
   apg: number;
   rpg: number;

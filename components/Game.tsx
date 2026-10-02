@@ -1,18 +1,67 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { buildQuestion, evaluateAnswer, pointsForCorrect } from "@/lib/game";
 import { Question } from "@/lib/types";
 
-type Leader = { name:string; streak:number; score:number };
+type Leader = {
+  initials: string;
+  streak: number;
+  score: number;
+  completedAt: string;
+};
 
-const demoLeaders:Leader[] = [
-  {name:"hoopsfan23",streak:47,score:18600},
-  {name:"LMCD",streak:39,score:14900},
-  {name:"Celtics18",streak:36,score:13200}
-];
+const LEADERBOARD_KEY = "lucky-break-daily-top5";
 
-function initials(name:string){ return name.split(" ").map(x=>x[0]).slice(0,2).join(""); }
+function playerInitials(name:string){
+  return name.split(" ").map(x=>x[0]).slice(0,2).join("");
+}
+
+function utcDay() {
+  return new Date().toISOString().slice(0,10);
+}
+
+function leaderboardStorageKey() {
+  return `${LEADERBOARD_KEY}:${utcDay()}`;
+}
+
+function sortLeaders(rows:Leader[]) {
+  return [...rows].sort((a,b)=>
+    b.streak-a.streak ||
+    b.score-a.score ||
+    new Date(a.completedAt).getTime()-new Date(b.completedAt).getTime()
+  );
+}
+
+function bestPerInitials(rows:Leader[]) {
+  const best = new Map<string,Leader>();
+  for (const row of sortLeaders(rows)) {
+    if (!best.has(row.initials)) best.set(row.initials,row);
+  }
+  return sortLeaders([...best.values()]).slice(0,5);
+}
+
+function loadLocalLeaders():Leader[] {
+  try {
+    const raw=localStorage.getItem(leaderboardStorageKey());
+    if (!raw) return [];
+    return bestPerInitials(JSON.parse(raw) as Leader[]);
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalLeaders(rows:Leader[]) {
+  localStorage.setItem(leaderboardStorageKey(),JSON.stringify(bestPerInitials(rows)));
+}
+
+function qualifiesForTop5(streak:number,score:number,leaders:Leader[]) {
+  if (leaders.length<5) return true;
+  const cutoff=sortLeaders(leaders)[4];
+  if (streak!==cutoff.streak) return streak>cutoff.streak;
+  if (score!==cutoff.score) return score>cutoff.score;
+  return true;
+}
 
 export default function Game() {
   const [started,setStarted]=useState(false);
@@ -23,12 +72,17 @@ export default function Game() {
   const [ended,setEnded]=useState(false);
   const [recent,setRecent]=useState<string[]>([]);
   const [best,setBest]=useState(0);
+  const [leaders,setLeaders]=useState<Leader[]>([]);
+  const [qualifies,setQualifies]=useState(false);
+  const [submittedInitials,setSubmittedInitials]=useState<string|null>(null);
+  const [chars,setChars]=useState(["","",""]);
+  const [entryError,setEntryError]=useState("");
+  const inputRefs=useRef<Array<HTMLInputElement|null>>([]);
 
   useEffect(()=>{
     setBest(Number(localStorage.getItem("lucky-break-best")||0));
+    setLeaders(loadLocalLeaders());
   },[]);
-
-  const leaders = useMemo(()=>demoLeaders,[]);
 
   function nextQuestion(nextStreak=streak) {
     const q=buildQuestion(nextStreak,recent);
@@ -38,9 +92,19 @@ export default function Game() {
   }
 
   function start() {
-    setStarted(true); setStreak(0); setScore(0); setEnded(false); setRecent([]);
+    setStarted(true);
+    setStreak(0);
+    setScore(0);
+    setEnded(false);
+    setRecent([]);
+    setQualifies(false);
+    setSubmittedInitials(null);
+    setChars(["","",""]);
+    setEntryError("");
     const q=buildQuestion(0,[]);
-    setQuestion(q); setRecent([q.id]); setSelected(null);
+    setQuestion(q);
+    setRecent([q.id]);
+    setSelected(null);
   }
 
   function choose(id:string) {
@@ -50,7 +114,9 @@ export default function Game() {
     if (correct) {
       const next=streak+1;
       const gained=pointsForCorrect(next);
-      setStreak(next); setScore(s=>s+gained);
+      const nextScore=score+gained;
+      setStreak(next);
+      setScore(nextScore);
       if (next>best) {
         setBest(next);
         localStorage.setItem("lucky-break-best",String(next));
@@ -58,13 +124,72 @@ export default function Game() {
       window.setTimeout(()=>nextQuestion(next),700);
     } else {
       setEnded(true);
+      setQualifies(qualifiesForTop5(streak,score,leaders));
     }
   }
 
+  function updateChar(index:number,value:string) {
+    const cleaned=value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(-1);
+    const next=[...chars];
+    next[index]=cleaned;
+    setChars(next);
+    setEntryError("");
+    if (cleaned && index<2) inputRefs.current[index+1]?.focus();
+  }
+
+  function handleKeyDown(index:number,e:React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key==="Backspace" && !chars[index] && index>0) {
+      inputRefs.current[index-1]?.focus();
+    }
+  }
+
+  function submitScore() {
+    const tag=chars.join("");
+    if (!/^[A-Z0-9]{3}$/.test(tag)) {
+      setEntryError("Enter exactly 3 letters or numbers.");
+      return;
+    }
+
+    const entry:Leader={
+      initials:tag,
+      streak,
+      score,
+      completedAt:new Date().toISOString()
+    };
+
+    const updated=bestPerInitials([...leaders,entry]);
+    setLeaders(updated);
+    saveLocalLeaders(updated);
+    setSubmittedInitials(tag);
+    setQualifies(false);
+  }
+
   async function share() {
-    const text=`🔥 LUCKY BREAK\nStreak: ${streak}\nScore: ${score.toLocaleString()}\nCan you beat me?`;
+    const rank=submittedInitials
+      ? leaders.findIndex(l=>l.initials===submittedInitials && l.streak===streak && l.score===score)+1
+      : 0;
+    const tagLine=submittedInitials ? `${submittedInitials}\n` : "";
+    const rankLine=rank>0 ? `Daily Rank: #${rank}\n` : "";
+    const text=`🔥 LUCKY BREAK\n\n${tagLine}Streak: ${streak}\nScore: ${score.toLocaleString()}\n${rankLine}\nCan you beat me?`;
     if (navigator.share) await navigator.share({title:"Lucky Break",text});
     else window.prompt("Copy your result:",text);
+  }
+
+  function Leaderboard({highlight}:{highlight?:string|null}) {
+    return <section className="panel arcadePanel">
+      <h2>TODAY&apos;S TOP 5</h2>
+      {leaders.length===0
+        ? <div className="emptyBoard">No scores yet today. Be the first.</div>
+        : leaders.map((l,i)=>
+          <div className={"leader "+(highlight===l.initials?"highlight":"")} key={l.initials}>
+            <span>#{i+1}</span>
+            <strong className="arcadeTag">{l.initials}</strong>
+            <span>🔥 {l.streak}</span>
+            <span>{l.score.toLocaleString()}</span>
+          </div>
+        )
+      }
+    </section>;
   }
 
   if (!started) {
@@ -76,11 +201,8 @@ export default function Game() {
         <p className="sub">Pick the player who leads the category. One wrong answer ends your streak.</p>
         <div className="actions"><button className="primary" onClick={start}>PLAY</button></div>
       </section>
-      <section className="panel">
-        <h2>Today&apos;s Top 10</h2>
-        {leaders.map((l,i)=><div className="leader" key={l.name}><span>#{i+1}</span><strong>{l.name}</strong><span>🔥 {l.streak}</span><span>{l.score.toLocaleString()}</span></div>)}
-      </section>
-      <p className="footer">Demo leaderboard data is shown in the MVP. Lucky Break is an independent basketball trivia game and is not affiliated with or endorsed by the NBA.</p>
+      <Leaderboard />
+      <p className="footer">Lucky Break is an independent basketball trivia game and is not affiliated with or endorsed by the NBA.</p>
     </main>;
   }
 
@@ -88,10 +210,43 @@ export default function Game() {
 
   if (ended) {
     const correct=question.players.find(p=>p.id===question.correctPlayerId)!;
+
+    if (qualifies && !submittedInitials) {
+      return <main className="shell">
+        <header className="brand"><div className="logo">Lucky <span>Break</span></div></header>
+        <section className="runOver arcadeEntry">
+          <div className="kicker">YOU MADE THE TOP 5</div>
+          <div className="big">{streak}</div>
+          <div className="sub">FINAL STREAK · {score.toLocaleString()} POINTS</div>
+          <h2 className="entryTitle">ENTER YOUR INITIALS</h2>
+          <div className="initialEntry" aria-label="Three character arcade initials">
+            {chars.map((char,i)=>
+              <input
+                key={i}
+                ref={el=>{ inputRefs.current[i]=el; }}
+                className="initialSlot"
+                value={char}
+                maxLength={1}
+                inputMode="text"
+                autoCapitalize="characters"
+                aria-label={`Initial ${i+1}`}
+                onChange={e=>updateChar(i,e.target.value)}
+                onKeyDown={e=>handleKeyDown(i,e)}
+              />
+            )}
+          </div>
+          {entryError && <div className="entryError">{entryError}</div>}
+          <div className="actions">
+            <button className="primary" onClick={submitScore}>LOCK IN SCORE</button>
+          </div>
+        </section>
+      </main>;
+    }
+
     return <main className="shell">
       <header className="brand"><div className="logo">Lucky <span>Break</span></div></header>
       <section className="runOver">
-        <div className="kicker">Run over</div>
+        <div className="kicker">{submittedInitials ? "HIGH SCORE LOCKED IN" : "RUN OVER"}</div>
         <div className="big">{streak}</div>
         <div className="sub">FINAL STREAK</div>
         <div className="scoreline">Score {score.toLocaleString()} · Personal best {best}</div>
@@ -101,6 +256,7 @@ export default function Game() {
           <button className="secondary" onClick={share}>SHARE RESULT</button>
         </div>
       </section>
+      <Leaderboard highlight={submittedInitials} />
     </main>;
   }
 
@@ -125,7 +281,7 @@ export default function Game() {
         const isWrong=selected===p.id && !isCorrect;
         const className="card"+(selected && isCorrect?" correct":"")+(isWrong?" wrong":"");
         return <button key={p.id} className={className} onClick={()=>choose(p.id)} disabled={Boolean(selected)}>
-          <div className="initials">{initials(p.name)}</div>
+          <div className="initials">{playerInitials(p.name)}</div>
           <div className="name">{p.name}</div>
           <div className="meta">{p.team} · {p.position}</div>
           {selected && <div className="reveal">{question.category.format(Number(p[question.category.key]))} {question.category.label}</div>}

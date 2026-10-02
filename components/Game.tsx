@@ -60,7 +60,7 @@ function qualifiesForTop5(streak:number,score:number,leaders:Leader[]) {
   const cutoff=sortLeaders(leaders)[4];
   if (streak!==cutoff.streak) return streak>cutoff.streak;
   if (score!==cutoff.score) return score>cutoff.score;
-  return true;
+  return false;
 }
 
 export default function Game() {
@@ -71,6 +71,7 @@ export default function Game() {
   const [selected,setSelected]=useState<string|null>(null);
   const [ended,setEnded]=useState(false);
   const [recent,setRecent]=useState<string[]>([]);
+  const [recentPlayers,setRecentPlayers]=useState<string[]>([]);
   const [best,setBest]=useState(0);
   const [leaders,setLeaders]=useState<Leader[]>([]);
   const [qualifies,setQualifies]=useState(false);
@@ -85,9 +86,10 @@ export default function Game() {
   },[]);
 
   function nextQuestion(nextStreak=streak) {
-    const q=buildQuestion(nextStreak,recent);
+    const q=buildQuestion(nextStreak,recent,recentPlayers);
     setQuestion(q);
     setRecent(prev=>[...prev.slice(-8),q.id]);
+    setRecentPlayers(prev=>[...prev,...q.players.map(p=>p.id)].slice(-12));
     setSelected(null);
   }
 
@@ -97,6 +99,7 @@ export default function Game() {
     setScore(0);
     setEnded(false);
     setRecent([]);
+    setRecentPlayers([]);
     setQualifies(false);
     setSubmittedInitials(null);
     setChars(["","",""]);

@@ -11,7 +11,7 @@ function playerInitials(name:string){
 
 function qualifiesForTop5(streak:number,score:number,leaders:Leader[]) {
   if (leaders.length<5) return true;
-  const cutoff=sortLeaders(leaders)[4];
+  const cutoff=[...leaders].sort((a,b)=>b.streak-a.streak || b.score-a.score || new Date(a.completedAt).getTime()-new Date(b.completedAt).getTime())[4];
   if (streak!==cutoff.streak) return streak>cutoff.streak;
   if (score!==cutoff.score) return score>cutoff.score;
   return false;

@@ -1,23 +1,25 @@
 import { players } from "./data";
 import { Category, Player, Question } from "./types";
 
+export const STAT_SEASON = "2024–25";
+
 export const categories: Category[] = [
-  {key:"ppg",label:"PPG",prompt:"Who averages the most points per game?",format:n=>n.toFixed(1)},
-  {key:"apg",label:"APG",prompt:"Who averages the most assists per game?",format:n=>n.toFixed(1)},
-  {key:"rpg",label:"RPG",prompt:"Who averages the most rebounds per game?",format:n=>n.toFixed(1)},
-  {key:"threesMade",label:"3PM",prompt:"Who has made the most three-pointers this season?",format:n=>String(n)},
-  {key:"fgPct",label:"FG%",prompt:"Who has the highest field-goal percentage?",format:n=>n.toFixed(1)+"%"},
-  {key:"threePct",label:"3PT%",prompt:"Who has the highest three-point percentage?",format:n=>n.toFixed(1)+"%"},
+  {key:"ppg",label:"PPG",season:STAT_SEASON,prompt:`Who averaged the most points per game in the ${STAT_SEASON} season?`,format:n=>n.toFixed(1)},
+  {key:"apg",label:"APG",season:STAT_SEASON,prompt:`Who averaged the most assists per game in the ${STAT_SEASON} season?`,format:n=>n.toFixed(1)},
+  {key:"rpg",label:"RPG",season:STAT_SEASON,prompt:`Who averaged the most rebounds per game in the ${STAT_SEASON} season?`,format:n=>n.toFixed(1)},
+  {key:"threesMade",label:"3PM",season:STAT_SEASON,prompt:`Who made the most three-pointers in the ${STAT_SEASON} season?`,format:n=>String(n)},
+  {key:"fgPct",label:"FG%",season:STAT_SEASON,prompt:`Who had the highest field-goal percentage in the ${STAT_SEASON} season?`,format:n=>n.toFixed(1)+"%"},
+  {key:"threePct",label:"3PT%",season:STAT_SEASON,prompt:`Who had the highest three-point percentage in the ${STAT_SEASON} season?`,format:n=>n.toFixed(1)+"%"},
   {key:"careerPoints",label:"PTS",prompt:"Who has the most career points?",format:n=>n.toLocaleString()},
   {key:"careerAssists",label:"AST",prompt:"Who has the most career assists?",format:n=>n.toLocaleString()},
   {key:"careerRebounds",label:"REB",prompt:"Who has the most career rebounds?",format:n=>n.toLocaleString()},
   {key:"seasonsPlayed",label:"SEASONS",prompt:"Who has played the most NBA seasons?",format:n=>String(n)},
-  {key:"allStars",label:"ALL-STARS",prompt:"Who has the most All-Star appearances?",format:n=>String(n),eligibility:p=>p.allStars>0},
+  {key:"allStars",label:"ALL-STARS",prompt:"Who has the most NBA All-Star selections?",format:n=>String(n),eligibility:p=>p.allStars>0},
   {key:"allNBA",label:"ALL-NBA",prompt:"Who has the most All-NBA selections?",format:n=>String(n),eligibility:p=>p.allNBA>0},
   {key:"championships",label:"TITLES",prompt:"Who has won the most NBA championships?",format:n=>String(n),eligibility:p=>p.championships>0},
-  {key:"mvps",label:"MVP",prompt:"Who has won the most MVP awards?",format:n=>String(n),eligibility:p=>p.mvps>0},
-  {key:"draftPick",label:"DRAFT",prompt:"Who was drafted highest?",format:n=>"#"+n,lowerWins:true},
-  {key:"draftYear",label:"DRAFT",prompt:"Who entered the NBA first?",format:n=>String(n),lowerWins:true}
+  {key:"mvps",label:"MVP",prompt:"Who has won the most NBA MVP awards?",format:n=>String(n),eligibility:p=>p.mvps>0},
+  {key:"draftPick",label:"DRAFT",prompt:"Who was selected highest in the NBA Draft?",format:n=>"#"+n,lowerWins:true},
+  {key:"draftYear",label:"DRAFT",prompt:"Who entered the NBA earliest?",format:n=>String(n),lowerWins:true}
 ];
 
 export function multiplierForStreak(streak:number) {
@@ -45,11 +47,18 @@ function shuffle<T>(arr:T[]):T[] {
   return [...arr].sort(()=>Math.random()-.5);
 }
 
-export function buildQuestion(streak:number, recentIds:string[]=[]):Question {
-  for (let attempt=0;attempt<100;attempt++) {
+export function buildQuestion(
+  streak:number,
+  recentIds:string[]=[],
+  recentPlayerIds:string[]=[]
+):Question {
+  for (let attempt=0;attempt<160;attempt++) {
     const category = categories[Math.floor(Math.random()*categories.length)];
     let pool = players.filter(p=>!category.eligibility || category.eligibility(p));
     if (pool.length < 4) continue;
+
+    const freshPool=pool.filter(p=>!recentPlayerIds.includes(p.id));
+    if (freshPool.length>=4) pool=freshPool;
 
     const anchor = pool[Math.floor(Math.random()*pool.length)];
     const vals = pool.map(p=>valueOf(p,category));

@@ -64,16 +64,16 @@ export default function StartingFive({onEndless}:{onEndless:()=>void}) {
       <section className="dailyHero">
         <div className="kicker">STARTING FIVE</div>
         <h1 className="dailyTitle">Ten players. Five spots. One shot.</h1>
-        <p className="dailyTagline">Five belong. Five don&apos;t.</p>
+        <p className="dailyTagline">Five belong. Five don't.</p>
         {result ? <div className="completedCard">
-          <div className="statLabel">TODAY&apos;S STARTING FIVE</div>
+          <div className="statLabel">TODAY'S STARTING FIVE</div>
           <div className="dailyScore">{result.correct}/5</div>
           <div className="shareGrid">{result.grid}</div>
           <div className="scoreline">Score {result.score.toLocaleString()} · ⏱ {result.seconds}s</div>
-          <div className="actions"><button className="primary" onClick={()=>setPhase("result")}>VIEW TODAY&apos;S RESULT</button><button className="secondary" onClick={share}>SHARE RESULT</button></div>
+          <div className="actions"><button className="primary" onClick={()=>setPhase("result")}>VIEW TODAY'S RESULT</button><button className="secondary" onClick={share}>SHARE RESULT</button></div>
         </div> : <>
           <div className="challengePreview">
-            <div className="statLabel">TODAY&apos;S CATEGORY</div>
+            <div className="statLabel">TODAY'S CATEGORY</div>
             <strong>{challenge.category.label}</strong>
             <p>{challenge.category.prompt}</p>
           </div>
@@ -94,7 +94,7 @@ export default function StartingFive({onEndless}:{onEndless:()=>void}) {
     return <main className="shell dailyShell">
       <header className="brand"><button className="textButton" onClick={()=>setPhase("home")}>← Home</button><div className="logo">Lucky <span>Break</span></div></header>
       <section className="resultHero">
-        <div className="kicker">{result.correct===5?"PERFECT LINEUP":"TODAY&apos;S RESULT"}</div>
+        <div className="kicker">{result.correct===5?"PERFECT LINEUP":"TODAY'S RESULT"}</div>
         <div className="dailyScore">{result.correct}/5</div>
         <div className="shareGrid">{result.grid}</div>
         <div className="scoreline">Score {result.score.toLocaleString()} · ⏱ {result.seconds}s</div>

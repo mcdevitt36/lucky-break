@@ -46,9 +46,10 @@ export function utcDateKey(date=new Date()){ return date.toISOString().slice(0,1
 export function createDailyChallenge(date=utcDateKey()):DailyChallenge {
   const families:DailyCategory["family"][]=["season","career","achievement","draft"];
   const family=families[Math.abs(dayNumber(date))%families.length];
-  const familyCategories=dailyCategories.filter(c=>c.family===family);
+  const familyCategories=dailyCategories.filter(c=>c.family===family && players.filter(p=>!c.eligibility||c.eligibility(p)).length>=10);
   const seed=hash("lucky-break:"+date);
   const category=familyCategories[seed%familyCategories.length];
+  if(!category) throw new Error("No viable daily category");
   let eligible=players.filter(p=>!category.eligibility||category.eligibility(p));
   eligible=[...eligible].sort((a,b)=>category.lowerWins?value(a,category)-value(b,category):value(b,category)-value(a,category));
   if(eligible.length<10) throw new Error("Not enough eligible players for daily challenge");

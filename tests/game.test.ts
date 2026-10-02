@@ -59,4 +59,18 @@ describe("Starting Five daily challenge",()=>{
     const c=createDailyChallenge("2026-10-02");
     expect(c.playerIds.every(x=>typeof x==="string")).toBe(true);
   });
+  it("produces valid unambiguous boards across a month",()=>{
+    const map=new Map(players.map(p=>[p.id,p]));
+    for(let day=1;day<=31;day++){
+      const date="2026-10-"+String(day).padStart(2,"0");
+      const c=createDailyChallenge(date);
+      expect(c.playerIds).toHaveLength(10);
+      expect(c.correctPlayerIds).toHaveLength(5);
+      const ranked=c.playerIds.map(id=>map.get(id)!).sort((a,b)=>{
+        const av=Number(a[c.category.key]),bv=Number(b[c.category.key]);
+        return c.category.lowerWins?av-bv:bv-av;
+      });
+      expect(Number(ranked[4][c.category.key])).not.toBe(Number(ranked[5][c.category.key]));
+    }
+  });
 });
